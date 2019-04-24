@@ -1,0 +1,23 @@
+#判断TCGAid是肿瘤还是正常
+x <- data.frame(id=c(
+  "TCGA-AC-A3OD-01B-06R-A22O-07",
+  "TCGA-AC-A3OD-11B-06R-A22O-07",
+  "TCGA-AC-A3OD-05B-06R-A22O-07"
+))
+length(x[,1])
+x[1,1]
+
+#Method1
+for (i in 1:length(x[,1])) {
+  num <-as.numeric(substring(x[i,1],14,15))
+  if(num %in% seq(1,9) ){
+    x[i,2] <- "Tumor"
+  }
+    if(num %in% seq(10,29)){
+      x[i,2] <- 'Normal' 
+  }
+}
+colnames(x)[2]<-'sample'
+#Method2:ifelse()
+Group <- ifelse(as.numeric(substr(x$id,14,15)) %in% seq(1,9), 'Tumor','Normal')
+xx <- data.frame(x,Group)
