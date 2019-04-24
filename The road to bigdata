@@ -1,0 +1,137 @@
+str1 <- letters[1:6]
+str2 <- LETTERS[2:7]
+paste(str1,str2)
+paste(str1,str2,sep="",collapse = "-")
+huase <- c('red','black','ling','club')
+shuzi <- c('A',2:10,'J','Q','K')
+puke <- paste(rep(huase, each = 13), shuzi)
+queen <- rep(c('manqueen','womenqueen'),each =2)
+puke <- c(puke,queen)
+puke
+coffe <- 'Boiling coffee brings out a billterly tast.'
+coffe
+coffe.str <- unlist(strsplit(coffe,' '))
+coffe.str
+strsplit(coffe,' ')[[1]]
+sort(coffe.str, decreasing =TRUE)
+state.abb
+state.name
+grep('M',state.name)
+state.name[19]
+state.name[grep('m', state.name)]
+grep('m',state.name,value = TRUE)
+grep(' ',state.name,value = TRUE)
+HELLO <- sub('M','yinli',state.name)
+grep('yinli',HELLO, value = TRUE)
+grep('ii+', HELLO,value = TRUE)
+###deck
+rm(list=ls())
+huase <- c('red','black','pian','hua')
+numb <- c('A',2:10,'J','Q','K')
+deck <- paste(rep(huase,each = 13),numb,sep ='')
+str(deck)
+sample(deck,34)
+mynum<-1:56
+mynum
+sample(mynum,56)
+sample(1:6,12,replace = TRUE)
+shaizi()
+islands
+head(islands)
+sort(islands)
+islands[5]
+islands[]
+islands[islands>100]
+islands[islands<30]
+islands[max(islands)]
+max(islands)
+which.max(islands)
+which.min(islands)
+islands['Taiwan']
+islands['Hainan']
+iris
+iris[1:8,]
+x <- iris["Petal.Length"]
+x
+str(x)
+x<-sample(1:nrow(iris),8)
+x
+iris[x,]
+duplicated(iris)
+which(duplicated(iris))
+iris[which(duplicated(iris)),]
+head(iris)
+iris <-iris[-which(duplicated(iris)),]
+duplicated(iris)
+which(duplicated(iris))
+myirisduplicated <- function(){
+  i<-which(duplicated(iris))
+  x<-iris[-i,]
+  print(x)
+}
+myirisduplicated()
+iris
+iris[!duplicated(iris),]
+airquality
+head(airquality)
+str(airquality)
+complete.cases(airquality)
+x.NoNA <- airquality[complete.cases(airquality),]
+x.NoNA
+str(x.NoNA)
+x2.NoNA <- na.omit(airquality)
+str(x2.NoNA)
+rm(list=ls())
+state.x77
+head(state.x77)
+mystate.x77<-as.data.frame(state.x77)
+head(mystate.x77)
+mystate.x77$Name <- rownames[(mystate.x77)
+head(mystate.x77)
+rownames(mystate.x77)<-NULL
+mypopu.state <- mystate.x77[mystate.x77$Population>5000, c('Name','Population')]
+myincome <-mystate.x77[mystate.x77$Income>5000,c('Name','Income')]
+myincome
+boxplot(mystate.x77$Population, mystate.x77$Income)
+income_popu<-merge(mypopu.state,myincome)
+income_popu
+merge(mypopu.state,myincome,all=TRUE)
+myindex <- match(mypopu.state$Name,myincome$Name)
+myincome[na.omit(myindex),]
+myindex2<-mypopu.state$Name %in% myincome$Name
+myindex2
+myincome[myindex2,]
+mypopu.state[myindex2,]
+mystate.info<-data.frame(Region=state.region, state.x77)
+head(mystate.info)
+state.info <- mystate.info[1:15,]
+state.info[sort(state.info$Income,decreasing = TRUE)]
+state.info[order(state.info$Income,decreasing=TRUE),]
+state.info[order(state.info$Region, state.info$Income),]
+with(state.info, tapply(Income, Region, mean))
+head(state.info)
+hist(state.info$Murder,col = 'blue')
+stateUSA
+hist(mtcars$mpg, col = 'green',main = 'Histogram of MPG',xlab = 'Mile per Gallon',ylab = 'Frequency')
+density(crabs$CW)
+install.packages('crabs')
+plot(density(mtcars$mpg),col='green')
+head(state.x77)
+attach(state.x77)
+state.x77<-as.data.frame(state.x77)
+cor(Murder,Income)
+state.x77 <- merge(state.x77,state.region)
+detach(state.x77)
+attach(state.x77)
+head(state.x77)
+boxplot(Population~y,col='red')
+head(iris)
+cor(iris[-5])
+cor(iris)
+cor(iris[1:4])
+plot(iris[1:4])
+#########################################
+#Chapter 16
+###############################################
+myresearch <- matrix(c(20,72,80,28),ncol=2)
+myresearch
