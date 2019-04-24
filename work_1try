@@ -1,0 +1,256 @@
+#1.manipulate data
+#pheatmap
+#2.survival sanalysis
+#3.the expression in different stage or status etc.
+#4.correlation
+
+
+rm(list=ls())#魔幻操作，一键清空
+setwd("F:\\kelly\\work_1")
+a <- read.csv(file ="runinfo.csv", header = TRUE)
+str(runinfo)
+View(a)
+dim(runinfo)
+b <- read.csv(file = "sample.csv")
+colnames(a)
+colnames(b)
+d= merge(a,b, by.x = 'Sample_Name', by.y = 'Accession')
+dim(a)
+dim(b)
+dim(d)
+View(b)
+e=d[,c("MBases","Title")]
+e[,2]
+head(e)
+f=substring(e[,2],8,11)
+head(f)
+e$plate=f
+head(e)
+library(ggplot2)
+ggplot(e,aes(x=plate,y=MBases))+geom_boxplot()
+library(ggpubr)
+p <- ggboxplot(e, x = "plate", y = "MBases",
+               color = "plate", palette = "jco",
+               add = "jitter")
+# Add p-value
+p + stat_compare_means(method = 't.test')
+
+####
+b = read.table(file = "GSE49515_series_matrix.txt.gz",
+               comment.char = '!',header = TRUE,
+               sep='\t')
+save(b, file='input.Rdata')
+load('input.Rdata')
+View(b)
+write.csv(b,'GSE49515_series_matrix.csv')
+##delete the rowname
+d = read.csv('GSE49515_series_matrix.csv')
+rownames(d)=d[,2]
+d=d[,-c(1,2)]
+head(d)
+##compute the mean value of ervery row of d
+##the first method:ussing for function
+for (i in 1:nrow(d)) {
+  print(mean(as.numeric(d[i,])))
+}
+##the second method:using the apply function
+apply(d,1,function(x) mean(x))
+#or use the simplified form as follows
+#apply(d, 1, mean)
+##the third method:using rowmean function
+rowMeans(d)
+#########################
+#creat the function  rowmax
+##########################
+myrowmax=function(x){
+ apply(x,1,max)
+}
+myrowmax(d)
+##compute the sd
+apply(d,1,sd)
+sort(apply(d, 1, sd),decreasing = T)[1:50]
+#get the name for every rows
+cg=names(sort(apply(d, 1, sd),decreasing = T)[1:50])
+sample(1:nrow(d),50)
+pheatmap::pheatmap(d[sample(1:nrow(d),50),])
+pheatmap::pheatmap(d[cg,])
+###############################################################################
+####LESSON 2
+################################################################################
+library(pheatmap)
+a1=rnorm(100)
+dim(a1)=c(5,20)
+pheatmap(a1)
+a2=a1+2
+dim(a2)=c(5,20)
+pheatmap(a2)
+b=cbind(a1,a2)
+b=as.data.frame(b)
+pheatmap(b)
+View(b)
+names(b)=c(paste('a1',1:20,sep ='_'),paste('a2',1:20,sep = '_'))
+
+################SURVIVAL ANALYSIS
+install.packages('survminer')
+library(survminer)
+library(ggstatsplot)
+library(survival)
+rm(list=ls())
+a=read.csv('LIHC_FYN_50_50.csv', header = TRUE, sep = ',',fill=T)
+tail(a)
+dat=a
+ggbetweenstats(data=dat, x=Group, y=Expression)
+table(dat$Status)
+dat$Status=ifelse(dat$Status=='Dead',1,0)
+sfit<-survfit(Surv(Days, Status)~Group, data=dat)
+sfit
+summary(sfit)
+ggsurvplot(sfit,conf.int=F, pval=TRUE)
+ggsurvplot(sfit, palette = c('#E7B800','#2E9FDF'),
+           risk.table = TRUE, pval=TRUE,
+           conf.int = TRUE, xlab='Time in days',
+           ggtheme = theme_light(),
+           ncensor.plot=TRUE)
+
+
+
+########################get the expression of any gene in any cancer or different stage
+##get the orginal information from the cbioportal and download them, import into R
+getwd()
+a = read.table('plot.txt',header = TRUE, sep = '\t', fill=T)
+tail(a)
+colnames(a)=c('ID','Alternations','mRNA_expression','Mutations')
+dat = a
+
+ggbetweenstats(data=dat, x=Alternations, y=mRNA_expression)
+library(ggplot2)
+ggsave('plot_mutation_c19orf48.png')
+#########################################################
+##correlation
+##########################################################
+a=rnorm(10)
+b=rnorm(10)
+b=10*a+rnorm(10)
+cor(a,b)
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("airway", version = "3.8")
+library(airway)
+data(airway)
+exprSet=assay(airway)
+colnames(exprSet)
+pheatmap(cor(exprSet))
+View(exprSet)
+dim(exprSet)
+cor(exprSet[,1],exprSet[,2])
+##0.9632268高的原因可能是技术重复样本，也可能是0太多
+cor(exprSet)
+group_list=colData(airway)[,3]
+tmp=data.frame(g=group_list)
+rownames(tmp)=colnames(exprSet)
+pheatmap(cor(exprSet),annotation_col = tmp)
+dim(exprSet)
+#结果显示还是相关性太高，看数据发现主要因为为0的太多
+#jimmy建议，把表达量如果有5个为0那么就删除（此处一共8个样本）的都删除
+#思路：删除的是基因，是行，那么就对行进行处理,先判断每一行大于0或1的个数
+#true=1,false=0
+x=exprSet[1,]
+x>1
+# RR1039508 SRR1039509 SRR1039512 SRR1039513 SRR1039516 SRR1039517 SRR1039520 
+# TRUE       TRUE       TRUE       TRUE       TRUE       TRUE       TRUE 
+# SRR1039521 
+# TRUE
+table(x>1)
+sum(x>1)
+sum(x>1)>5
+#现在可以用apply了
+dim(exprSet)
+apply(exprSet, 1, function(x) sum(x>1)>5)
+exprSet = exprSet[apply(exprSet, 1, function(x) sum(x>1)>5),]
+dim(exprSet)
+exprSet=log(edgeR::cpm(exprSet)+1)
+dim(exprSet)
+exprSet=exprSet[names(sort(apply(exprSet,1,mad),decreasing = T)[1:500]),]
+dim(exprSet)
+M=cor(log2(exprSet+1))
+tmp=data.frame(g=group_list)
+rownames(tmp)=colnames(M)
+pheatmap(M, annotation_col = tmp)
+pheatmap(M, annotation_col = tmp, filename = 'cor.png')
+pheatmap(M)
+
+############################################中级
+##work1
+library(org.Hs.eg.db)
+# find the symbole for the belowed gene ID
+# ENSG00000000003.13
+# ENSG00000000005.5
+# ENSG00000000419.11
+# ENSG00000000457.12
+# ENSG00000000460.15
+# ENSG00000000938.11
+library(org.Hs.eg.db)
+g2s <- toTable(org.Hs.egSYMBOL)
+g2e <- toTable(org.Hs.egENSEMBL)
+g2s[1:5,]
+g2e[1:5,]
+g2se <- merge(g2e,g2s,"gene_id")
+head(g2se)
+x <- 'ENSG00000000003.13'
+x1 <- substr(x,1,15)
+x1
+subset(g2se, g2se$ensembl_id == x1)
+s1 <- substr('ENSG00000000003.13',1,15)
+s2 <- substr('ENSG00000000005.5',1,15)
+s3 <- substr('ENSG00000000419.11',1,15)
+s4 <- substr('ENSG00000000460.15',1,15)
+s5 <- substr('ENSG00000000938.11',1,15)
+xx <- data.frame(s1,s2,s3,s4,s5)
+xx[[1]]
+subset(g2se, g2se$ensembl_id == xx[[1]])
+install.packages('hgu133a.db')
+library(hgu133a.db)
+hgu133aSYMBOL
+ids <- toTable(hgu133aSYMBOL)
+head(ids)
+getwd()
+setwd('F:/kelly/work_1/')
+myids <- read.table('myids.txt')
+head(myids)
+colnames(myids)<- 'probe_id '
+ids2symboles <- merge(myids, ids, "probe_id" )
+ids2symboles <- subset(ids, ids$probe_id==myids)
+#######zhongji_wor
+rm(list=ls())
+data("sCLLex")
+sCLLex
+str(sCLLex)
+exprSet=exprs(sCLLex)
+exprSet<-as.data.frame(exprSet)
+head(exprSet)
+#BiocManager::install("hgu95av2.db", version = "3.8")
+library(hgu95av2.db)
+hgu95av2()
+hgu95av2SYMBOL
+
+cllsymbol<-toTable(hgu95av2SYMBOL)
+head(exprSet)
+exprSet$probe_id<-rownames(exprSet)
+head(exprSet)
+head(cllsymbol)
+exprSet<-merge(cllsymbol, exprSet)
+head(exprSet)
+exprSet$Probe<-NULL
+TP53<-exprSet[exprSet$symbol=="TP53",]
+exprSet[1421,]
+cll_disease<-sCLLex$Disease
+str(cll_disease)
+cll_disease<-as.character(cll_disease)
+head(exprSet)
+colnames(exprSet)[3:24]<-cll_disease
+colnames(TP53)[3:24]<-cll_disease
+expr_tp53<-TP53[3:24]
+boxplot(TP53$progres.,TP53$stable, data=TP53, col='red', main="The expression of TP53 in progress and stabel group",
+        ylab='The expression value')
+library(ggpubr)
+
