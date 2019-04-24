@@ -6,7 +6,7 @@ x <- data.frame(id=c(
 ))
 length(x[,1])
 x[1,1]
-
+#第14，15位最重要，从01-29，其中01-09是tumor也就是癌症样本，10-29是Normal也就是癌旁组织
 #Method1
 for (i in 1:length(x[,1])) {
   num <-as.numeric(substring(x[i,1],14,15))
