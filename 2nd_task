@@ -1,4 +1,3 @@
-
 #作业在这里http://www.bio-info-trainee.com/3750.html
 rm(list = ls()) 
 options()$repos 
@@ -103,3 +102,70 @@ pdata <- pData(sCLLex)
 head(expr)
 library(hgu95av2.db)
 probe_sym <- toTable(hgu95av2SYMBOL)
+tp53_probes <- probe_sym[grep("TP53$", probe_sym$symbol),]
+# probe_id symbol
+# 966    1939_at   TP53
+# 997  1974_s_at   TP53
+# 1420  31618_at   TP53
+boxplot(expr['1939_at',]~pdata$Disease)
+#ggpubr
+#http://www.sthda.com/english/articles/24-ggpubr-publication-ready-plots/
+library(ggpubr)
+tp53_pub <- cbind(expr['1939_at',], as.data.frame(pdata$Disease))
+colnames(tp53_pub) <- c('Expression',"Group")
+p <- ggboxplot(tp53_pub, y='Expression', x='Group',fill = 'Group', 
+            palette = 'aaas' ,add = 'jitter')
+# "npg", "aaas", "lancet", "jco", "ucscgb", "uchicago", "simpsons" "rickandmorty"
+p + stat_compare_means()
+p + stat_compare_means(method = 't.test')
+#the violin plot
+my_comparisons <- list(c("progress.", "stable"))
+ggviolin(tp53_pub, y='Expression', x='Group',fill = 'Group', 
+         palette = 'aaas' ,add = 'boxplot', add.params = list(fill = 'white'))+
+         stat_compare_means(comparisons = my_comparisons, method = "t.test")+
+         stat_compare_means(label.y = 5)
+#####################Task4
+#cbioportal下载，即利用在线数据（下载），本地进行改观
+# http://www.cbioportal.org/index.do
+# Select Studies 选项中输入Breast Invasive Carcinoma PanCancer 搜索并选中目标数据集
+# Enter Genes 数据框中输入目标基因BRCA1
+# 点击Submit Query提交搜索请求
+# 结果页面中，Plots选项卡选择合适数据进行绘图，或下载数据
+rm(list = ls())
+options(stringsAsFactors = F)
+a=read.table('e4-plot.txt',sep = '\t',fill = T,header = T)
+View(a)
+colnames(a)=c('id','subtype','expression','mut')
+dat=a
+library(ggstatsplot)
+ggbetweenstats(data =dat, x = subtype,  y = expression)
+library(ggplot2)
+ggsave('plot-again-BRCA1-TCGA-BRCA-cbioportal.png')
+##############Task5
+# 找到TP53基因在TCGA数据库的乳腺癌数据集的表达量分组看其是否影响生存
+# 提示使用：http://www.oncolnc.org/
+#值得商榷的问题，low和high分组问题，若50：50分组，无差异
+#个人理解，这里不必平分，可以30：30，也就是就挑高和低的30%，这是可以说明问题的
+rm(list = ls())
+options(stringsAsFactors = F)
+a=read.table('BRCA_7157_50_50.csv',sep = ',',fill = T,header = T)
+#View(a)
+dat=a
+library(ggplot2)
+library(survival)
+library(survminer) 
+table(dat$Status)
+dat$Status=ifelse(dat$Status=='Dead',1,0)
+sfit <- survfit(Surv(Days, Status)~Group, data=dat)
+sfit
+summary(sfit)
+ggsurvplot(sfit, conf.int=F, pval=TRUE)
+ggsave('survival_TP53_in_BRCA_TCGA.png')
+##############################################################
+#Task6
+##############################################################
+#下载数据集GSE17215的表达矩阵并且提取下面的基因画热图
+# ACTR3B ANLN BAG1 BCL2 BIRC5 BLVRA CCNB1 CCNE1 CDC20 CDC6 CDCA1 CDH3
+# CENPF CEP55 CXXC5 EGFR ERBB2 ESR1 EXO1 FGFR4 FOXA1 FOXC1 GPR160 GRB7
+# KIF2C KNTC2 KRT14 KRT17 KRT5 MAPT MDM2 MELK MIA MKI67 MLPH MMP11 MYBL2
+# MYC NAT1 ORC6L PGR PHGDH PTTG1 RRM2 SFRP1 SLC39A6 TMEM45B TYMS UBE2C UBE2T
