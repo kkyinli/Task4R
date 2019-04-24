@@ -1,1 +1,104 @@
-waiting
+#作业在这里http://www.bio-info-trainee.com/3750.html
+rm(list = ls()) 
+options()$repos 
+options()$BioC_mirror
+options(BioC_mirror="https://mirrors.ustc.edu.cn/bioc/")
+options("repos" = c(CRAN="https://mirrors.tuna.tsinghua.edu.cn/CRAN/"))
+options()$repos 
+options()$BioC_mirror
+# https://bioconductor.org/packages/release/bioc/html/GEOquery.html
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("KEGG.db",ask = F,update = F)
+BiocManager::install(c("GSEABase","GSVA","clusterProfiler" ),ask = F,update = F)
+BiocManager::install(c("GEOquery","limma","impute" ),ask = F,update = F)
+BiocManager::install(c("genefu","org.Hs.eg.db","hgu133plus2.db" ),ask = F,update = F)
+options()$repos
+install.packages('WGCNA')
+install.packages(c("FactoMineR", "factoextra"))
+install.packages(c("ggplot2", "pheatmap","ggpubr"))
+library("FactoMineR")
+library("factoextra")
+library(GSEABase)
+library(GSVA)
+library(clusterProfiler)
+library(genefu)
+library(ggplot2)
+library(ggpubr)
+library(hgu133plus2.db)
+library(limma)
+library(org.Hs.eg.db)
+library(pheatmap)
+#Task1
+# 1. 请根据R包org.Hs.eg.db找到下面ensembl 基因ID 对应的基因名(symbol)
+# ENSG00000000003.13
+# ENSG00000000005.5
+# ENSG00000000419.11
+# ENSG00000000457.12
+# ENSG00000000460.15
+# ENSG00000000938.11
+library(org.Hs.eg.db)
+g2s <- toTable(org.Hs.egSYMBOL)
+g2e <- toTable(org.Hs.egENSEMBL)
+head(g2s)
+head(g2e)
+g2se <- merge(g2s, g2e, by='gene_id')
+head(g2se)
+ensID1 <- c("ENSG00000000003.13","ENSG00000000005.5","ENSG00000000419.11",
+           "ENSG00000000457.12","ENSG00000000460.15","ENSG00000000938.11")
+ensID <- data.frame(ensID1)
+#Method1
+for (i in 1:nrow(ensID)) {
+  ens_i <- strsplit(as.character(ensID[i,1]),'.',fixed = TRUE)[[1]][1]
+  ensID[i,2]<-ens_i
+}
+ensID$ensembl_id  <- NULL
+colnames(ensID)[1] <- 'ensembl_id' 
+ensID_last <- merge(ensID, g2se, 'ensembl_id')
+ensID_last
+#Method2
+ensID$ensembl_id <- unlist(lapply(ensID1,  function(x) {strsplit(as.character(x),'.',fixed = TRUE)[[1]][1]
+  }))
+ensID_last2 <- merge(ensID, g2se,"ensembl_id")
+##############################################################
+#Task2
+##############################################################
+# 根据R包hgu133a.db找到下面探针对应的基因名(symbol)
+# 053_at
+# 117_at
+# 121_at
+# 1255_g_at
+# 1316_at
+# 1320_at
+# 1405_i_at
+# 1431_at
+# 1438_at
+# 1487_at
+# 1494_f_at
+# 1598_g_at
+# 160020_at
+# 1729_at
+# 177_at
+library(hgu133a.db)
+ids <- toTable(hgu133aSYMBOL)
+head(ids)
+myids <- read.table(file = "my_probe_ids.txt")
+colnames(myids) <- "probe_id"
+myid_sym <- merge(myids, ids, by="probe_id")
+head(myid_sym)
+##########################Task3
+# 找到R包CLL内置的数据集的表达矩阵里面的TP53基因的表达量，并且绘制在 progres.-stable分组的boxplot图
+# 提示：
+# suppressPackageStartupMessages(library(CLL))
+# data(sCLLex)
+# sCLLex
+# exprSet=exprs(sCLLex)   
+# library(hgu95av2.db)
+rm(list=ls())
+library(CLL)
+data(sCLLex)
+expr <- exprs(sCLLex)
+pdata <- pData(sCLLex)
+head(expr)
+library(hgu95av2.db)
+probe_sym <- toTable(hgu95av2SYMBOL)
