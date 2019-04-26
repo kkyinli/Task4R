@@ -29,7 +29,7 @@ library(hgu133plus2.db)
 library(limma)
 library(org.Hs.eg.db)
 library(pheatmap)
-######################################Task1
+#Task1
 # 1. 请根据R包org.Hs.eg.db找到下面ensembl 基因ID 对应的基因名(symbol)
 # ENSG00000000003.13
 # ENSG00000000005.5
@@ -38,6 +38,7 @@ library(pheatmap)
 # ENSG00000000460.15
 # ENSG00000000938.11
 library(org.Hs.eg.db)
+ls("package:org.Hs.eg.db")
 g2s <- toTable(org.Hs.egSYMBOL)
 g2e <- toTable(org.Hs.egENSEMBL)
 head(g2s)
@@ -169,3 +170,213 @@ ggsave('survival_TP53_in_BRCA_TCGA.png')
 # CENPF CEP55 CXXC5 EGFR ERBB2 ESR1 EXO1 FGFR4 FOXA1 FOXC1 GPR160 GRB7
 # KIF2C KNTC2 KRT14 KRT17 KRT5 MAPT MDM2 MELK MIA MKI67 MLPH MMP11 MYBL2
 # MYC NAT1 ORC6L PGR PHGDH PTTG1 RRM2 SFRP1 SLC39A6 TMEM45B TYMS UBE2C UBE2T
+#GSE17215数据在https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE17215
+#可知，是U133A的芯片数据,共6个样本
+#title为Expression data from paclitaxel and salinomycin-treated HMLER breast cancer cells
+library(hgu133a.db)
+setwd("f:/kelly/BioTree/")
+#有三种方法得到表达数据
+#1.下载.CEL格式文件，自己进行处理
+#2.手动下载series Matrix Files，然后读入
+#3.利用R下载表达数据
+library(GEOquery)
+library(GEOquery)
+#GEO使用https://www.bioconductor.org/packages/release/bioc/vignettes/GEOquery/inst/doc/GEOquery.html
+gse17215 <- getGEO('GSE17215',
+                   AnnotGPL = F,     ## 注释文件
+                   getGPL = F)       ## 平台文件
+show(gse17215)
+dat <- exprs(gse17215[[1]])
+pdata_17215 <- pData(gse17215[[1]])
+pdata_17215$`agent:ch1`
+
+#提取hgu133a包中的probe_id和symbol
+ids <- toTable(hgu133aSYMBOL)
+dat <- dat[ids$probe_id,]#合并，也可以用merge
+#这里有个问题，一共50个基因名，但是得到的是87个探针，也就是有一个gene对应几个探针的情况
+#怎么处理？ 取median或者去p最小的,也有取均值的,
+#先把median加到ids最后一列
+ids$median <- apply(dat, 1, median)
+head(ids)
+ids <- ids[order(ids$symbol, ids$median, decreasing = T),]
+head(ids)
+ids_dup <- ids[!duplicated(ids$symbol),]
+head(ids_dup)
+dat <- dat[ids_dup$probe_id,]
+dim(dat)
+#这样就得到了去重重复的探针在6个样本中的表达信息，但没有基因名
+dat <- as.data.frame(dat)
+dat$probe_id <- rownames(dat)
+dat_symbol <- merge(dat, ids, by ="probe_id")
+#载入50个基因名
+genes <- 'ACTR3B ANLN BAG1 BCL2 BIRC5 BLVRA CCNB1 CCNE1 CDC20 CDC6 CDCA1 CDH3 CENPF CEP55 CXXC5 EGFR ERBB2 ESR1 EXO1 FGFR4 FOXA1 FOXC1 GPR160 GRB7 KIF2C KNTC2 KRT14 KRT17 KRT5 MAPT MDM2 MELK MIA MKI67 MLPH MMP11 MYBL2 MYC NAT1 ORC6L PGR PHGDH PTTG1 RRM2 SFRP1 SLC39A6 TMEM45B TYMS UBE2C UBE2T'
+genes <- strsplit(genes, ' ')[[1]]
+genes <- data.frame(genes)
+colnames(genes) <- 'symbol'
+genes_expr <- merge(genes, dat_symbol, by ='symbol')
+#至此完成了探针过滤，加基因名等操作
+#取对数
+genes_expr <- log2(dat+1)
+heat_expr <- genes_expr[,-c(2,9)]
+rownames(heat_expr) <- heat_expr$symbol 
+heat_expr <- heat_expr[,-1]
+heat_expr <- log2(heat_expr+1)
+pheatmap::pheatmap(heat_expr, scale = 'row')
+ggcorrplot::ggcorrplot(cor(heat_expr))
+#############################################
+#Task7
+#############################################
+# 作业7
+# 下载数据集GSE24673的表达矩阵计算样本的相关性并且绘制热图，需要标记上样本分组信息
+#数据地址https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE24673
+rm(list=ls())
+options(stringsAsFactors = F)   
+gse24673 <- getGEO('GSE24673',
+                   AnnotGPL = F,     ## 注释文件
+                   getGPL = F)       ## 平台文件
+show(gse24673)
+dat <- exprs(gse24673[[1]])
+pdata_24673 <- pData(gse24673[[1]]) 
+pdata_24673 <- pdata_24673$source_name_ch1
+pdata_24673 <- data.frame(Group = pdata_24673)
+#添加分组信息
+rownames(pdata_24673) <- colnames(cor_dat)
+pheatmap::pheatmap(cor_dat, annotation_col=pdata_24673)
+############################################
+#Task8
+############################################
+# 找到 GPL6244 platform of Affymetrix Human Gene 1.0 ST Array 对应的R的bioconductor注释包，并且安装它！
+#参考http://www.bio-info-trainee.com/1399.html
+options()$repos
+options()$BioC_mirror 
+options(BioC_mirror="https://mirrors.ustc.edu.cn/bioc/")
+options("repos" = c(CRAN="https://mirrors.tuna.tsinghua.edu.cn/CRAN/"))
+BiocManager::install("hugene10sttranscriptcluster.db",ask = F,update = F)
+options()$repos
+options()$BioC_mirror
+############################################
+#Task9
+############################################
+# 下载数据集GSE42872的表达矩阵，并且分别挑选出所有样本的(平均表达量/sd/mad/)最大的探针，
+# 并且找到它们对应的基因。
+rm(list=ls())
+options(stringsAsFactors = F)   
+gse42872 <- getGEO('GSE42872',
+                   AnnotGPL = F,     ## 注释文件
+                   getGPL = F)       ## 平台文件
+show(gse42872)
+dat <- as.data.frame(exprs(gse42872[[1]]))
+pdata_42872 <- pData(gse42872[[1]]) 
+pdata_42872 <- pdata_42872$source_name_ch1
+pdata_42872 <- data.frame(Group = pdata_42872)
+
+max_mean <- names(sort(apply(dat,1, mean), decreasing = T))[1]
+max_sd <- names(sort(apply(dat,1, sd), decreasing = T))[1]
+max_mad <- names(sort(apply(dat,1, mad), decreasing = T))[1]
+str(max_max)
+library(hugene10sttranscriptcluster.db)
+list(hugene10sttranscriptcluster.db)
+###find the corresponding genes for the probes
+ids <- toTable(hugene10sttranscriptclusterSYMBOL)
+ids[match(max_mad, ids$probe_id),]
+#或者
+select(hugene10sttranscriptcluster.db,
+       keys = c(max_sd, max_mad, max_mean),
+       columns = c("SYMBOL"),
+       keytype = "PROBEID")
+##注意，max_mad探针对应着很多基因名
+############################################
+#Task10
+#这部分内容参考http://www.bio-info-trainee.com/bioconductor_China/software/limma.html
+############################################
+# 下载数据集GSE42872的表达矩阵，并且根据分组使用limma做差异分析，
+# 得到差异结果矩阵
+library(GEOquery)
+rm(list=ls())
+options(stringsAsFactors = F)   
+gse42872 <- getGEO('GSE42872', GSEMatrix = TRUE,
+                   AnnotGPL = F,     ## 注释文件
+                   getGPL = F)       ## 平台文件
+show(gse42872)
+dat <- as.data.frame(exprs(gse42872[[1]]))
+pdata_42872 <- pData(gse42872[[1]]) 
+pdata_42872 <- pdata_42872$title
+
+
+group <- unlist(lapply(pdata_42872, function(x)
+{
+  strsplit(x,' ')[[1]][4]
+}
+  ))
+#pdata_42872 <- data.frame(Group = pdata_42872)
+library(hugene10sttranscriptcluster.db)
+ids <- toTable(hugene10sttranscriptclusterSYMBOL)
+dim(ids)
+dim(dat)
+# > dim(ids)
+# [1] 19827     2
+# > dim(dat)
+# [1] 33297     6
+#很多探针没有注释信息，进行过滤,/可以用merge但是需要加列
+dat_filter <- dat[match(ids$probe_id,rownames(dat)),]
+dim(dat_filter)
+#用%in%进行筛选
+dat_filter2 <- dat[rownames(dat) %in% ids$probe_id,]
+# > dim(dat_filter)
+# [1] 19827     6
+#dat_filter is the expression matrix
+################
+#差异表达分析
+############还需要分组矩阵（design），比较矩阵（contrast）
+library(limma)
+##########分组矩阵design，group中的说明。1代表是。用于每张芯片的RNA样本分类
+design <- model.matrix(~0+factor(group))
+colnames(design) <- levels(factor(group))
+rownames(design) <- colnames(dat_filter)
+design
+# Control Vemurafenib
+# GSM1052615       1           0
+# GSM1052616       1           0
+# GSM1052617       1           0
+# GSM1052618       0           1
+# GSM1052619       0           1
+# GSM1052620       0           1
+###############比较矩阵
+colnames(design) <- levels(factor(group))
+rownames(design) <- colnames(dat_filter)
+design
+#再做一个比较矩阵【一般是case比control】，规定实验组和对照组并定义谁比谁
+contrast.matrix<-makeContrasts(paste0(unique(group),collapse = "-"),levels = design)
+#或者下面。注意是Vemurafenib/Control
+contrast.matrix_2 <- makeContrasts("Vemurafenib-Control" ,levels = design)
+
+##下面开始筛选差异基因DEGs
+#分步进行1，这步用到实验设计矩阵
+fit <- lmFit(dat_filer, design)
+#分步进行2，用到比较矩阵
+fit2 <- contrasts.fit(fit, contrast.matrix)
+fit2 <- eBayes(fit2)
+#分步进行3 
+tem_output <- topTable(fit2, coef = 1, n= Inf)
+mydegs <- na.omit(tem_output)
+
+#写成函数
+deg<- function(dat_filter,design,contrast){
+  ##step1
+  fit <- lmFit(dat_filter,design)#用到实验设计矩阵
+  ##step2
+  fit2 <- contrasts.fit(fit, contrast) #用到比较矩阵
+  fit2 <- eBayes(fit2)  
+  ##step3
+  mtx = topTable(fit2, coef=1, n=Inf)
+  deg_mtx = na.omit(mtx) 
+  return(deg_mtx)
+}
+deg_mtx <- DEG(dat_filter,design,contrast) #得到全部的差异基因矩阵
+head(DEG_mtx)
+#下面和symbole对应
+library(hugene10sttranscriptcluster.db)
+ids <- toTable(hugene10sttranscriptclusterSYMBOL)
+deg_mtx$probe_id <- rownames(deg_mtx)
+deg_mtx <- merge(ids,deg_mtx, by = 'probe_id')
+write.csv(deg_mtx, 'GSE42872_DEGs_limma.csv', quote = F)
